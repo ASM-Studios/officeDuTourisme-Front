@@ -7,6 +7,15 @@ import QuestionModal from "../../Components/QuestionModale.tsx";
 import { instance, getByCoordinates } from "../routes.ts";
 import {Simulate} from "react-dom/test-utils";
 import pointerCancel = Simulate.pointerCancel;
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Modal from '@mui/material/Modal';
+import { useCookies } from 'react-cookie';
 
 const mapContainerStyle = {
     width: '100vw',
@@ -39,8 +48,13 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
     const [round, setRound] = useState(0);
     const [canGuess, setCanGuess] = useState(false);
     const [score, setScore] = useState(0);
+    const [showScoreboard, setShowScoreboard] = useState(false);
+    const [rows, setRows] = useState([]);
+    const [dataIsLoading, setDataIsLoading] = useState(false);
 
     const maxRound = 3;
+
+    const [cookies, setCookie] = useCookies(['username']);
 
     useEffect(() => {
         if (round === maxRound) {
@@ -48,8 +62,22 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
             setQuestions(false);
             setRound(0);
             setScore(0);
+            const username = cookies.username;
+            instance.post('/setScoreByUser', {
+                "username": username,
+                "score": score,
+            })
+                .then(() => {});
         }
     }, [round]);
+
+    const getFirsts = async () => {
+        instance.get('/getFirsts').then((response) => {
+            setRows(response.data);
+        }).catch((error) => {
+            console.error(error);
+        });
+    }
 
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
@@ -113,6 +141,8 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
             },
         }
 
+        setDataIsLoading(true);
+
         await instance.post(getByCoordinates, cdata, {}).then((response) => {
             setData(response.data);
             setQuestions(true);
@@ -120,6 +150,8 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
         }).catch((error) => {
             console.error(error);
             toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
+        }).finally(() => {
+            setDataIsLoading(false);
         });
     }
 
@@ -167,6 +199,29 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
             >
                 {markerPosition && <Marker position={markerPosition} />}
             </GoogleMap>
+            {dataIsLoading && (
+                <>
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                            zIndex: 2,
+                        }}
+                    >
+                        <Typography variant="h6" color="primary">
+                            Chargement des données...
+                        </Typography>
+                    </Box>
+                </>
+            )}
             <Box
                 sx={{
                     position: 'absolute',
@@ -269,7 +324,62 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
                         </div>
                     </Box>
                 )}
+                <Button variant="contained" color="primary" onClick={() => {
+                    getFirsts();
+                    setShowScoreboard(true);
+                }} sx={{marginTop: '20px'}}>
+                    Voir les meilleurs scores
+                </Button>
             </Box>
+            {rounded && (
+                <Modal
+                    open={showScoreboard}
+                    onClose={() => setShowScoreboard(false)}
+                    aria-labelledby="modal-modal-title"
+                    aria-describedby="modal-modal-description"
+                >
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '50%',
+                            bgcolor: 'background.paper',
+                            border: '2px solid',
+                            borderColor: 'primary.main',
+                            borderRadius: 2,
+                            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .3)',
+                            p: 4,
+                            overflow: 'auto',
+                        }}
+                    >
+                        <TableContainer component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Player</TableCell>
+                                        <TableCell align="right">Score</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {rows.map((row) => (
+                                        <TableRow
+                                            key={row.username}
+                                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                        >
+                                            <TableCell component="th" scope="row">
+                                                {row.username}
+                                            </TableCell>
+                                            <TableCell align="right">{row.score}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Box>
+                </Modal>
+            )}
             {questions && (
                 <QuestionModal
                     open={questions}
