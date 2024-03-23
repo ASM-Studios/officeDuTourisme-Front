@@ -15,6 +15,5 @@ export type QcmQuestion = {
 };
 
 export type QcmType = {
-    Coordoninate: QcmCoordoninate;
     Question: QcmQuestion;
 };

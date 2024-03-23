@@ -1,8 +1,9 @@
-import { Box, Card, Button, CardContent, Typography, Grid } from '@mui/material';
+import { Box, Card, Button, CardContent, Typography, Grid, TextField } from '@mui/material';
 import officeDuTourisme from '@assets/OfficeDuTourisme.png';
-import { endpoint, instance } from "../routes.ts";
+import { instance } from "../routes.ts";
 import { toast, ToastContainer } from "react-toastify";
-import { GoogleLogin } from 'react-google-login';
+import { useCookies } from 'react-cookie';
+import React from "react";
 
 const ping = async () => {
     try {
@@ -30,17 +31,35 @@ const responseGoogle = (response) => {
 }
 
 const Actions = () => {
+    const [username, setUsername] = React.useState('');
+    const [cookies, setCookie] = useCookies(['username']);
+
+    const handleButtonClick = () => {
+        setCookie('username', username, { path: '/' });
+        launchGame();
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <CardContent>
-                <Typography variant="h5" component="div">
-                    Bienvenue dans l'Office du Tourisme
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    LE site officiel pour explorer la France !
-                    Prêt à découvrir les merveilles de notre pays ?
-                </Typography>
-                <Button variant="contained" color="primary" onClick={launchGame}>
+                <Box sx={{ marginBottom: '20px' }}>
+                    <Typography variant="h5" component="div">
+                        Bienvenue dans l'Office du Tourisme
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        LE site officiel pour explorer la France !
+                        Prêt à découvrir les merveilles de notre pays ?
+                    </Typography>
+                </Box>
+                <Box sx={{ marginBottom: '20px' }}>
+                    <TextField
+                        label="Nom d'utilisateur"
+                        variant="outlined"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                </Box>
+                <Button variant="contained" color="primary" onClick={handleButtonClick}>
                     Explorer ma france
                 </Button>
             </CardContent>

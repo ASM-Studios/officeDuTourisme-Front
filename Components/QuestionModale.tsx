@@ -8,10 +8,6 @@ type Question = {
 }
 
 type Data = {
-    Coordinate: {
-        lat: number;
-        lng: number;
-    }
     Question: Question;
 }
 
@@ -19,9 +15,10 @@ type QuestionModalProps = {
     data: Data;
     open: boolean;
     handleClose: () => void;
+    incrementScore: (points: number) => void;
 };
 
-const QuestionModal = ({ data, open, handleClose }: QuestionModalProps) => {
+const QuestionModal = ({ data, open, handleClose, incrementScore }: QuestionModalProps) => {
     return (
         <div>
             <Modal
@@ -50,7 +47,13 @@ const QuestionModal = ({ data, open, handleClose }: QuestionModalProps) => {
                         backgroundColor: '#f5f5f5',
                     }}
                 >
-                    {data?.Question?.type === 'QCM' ? <QcmForm data={data} /> : <NoPage />}
+                    {data?.Question?.type === 'QCM' ?
+                        <QcmForm
+                            data={data}
+                            incrementScore={incrementScore}
+                            handleClose={handleClose}
+                        />
+                    : <NoPage />}
                 </Box>
             </Modal>
         </div>

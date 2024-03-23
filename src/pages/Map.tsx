@@ -5,8 +5,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import QuestionModal from "../../Components/QuestionModale.tsx";
 import { instance, getByCoordinates } from "../routes.ts";
-import {json} from "react-router-dom";
-import {Streetview} from "@mui/icons-material";
+import {Simulate} from "react-dom/test-utils";
+import pointerCancel = Simulate.pointerCancel;
 
 const mapContainerStyle = {
     width: '100vw',
@@ -32,13 +32,20 @@ const Map = () => {
     });
     const [markerPosition, setMarkerPosition] = useState(null);
     const [isStreetViewActive, setIsStreetViewActive] = useState(false);
+    const [round, setRound] = useState(0);
+    const [canGuess, setCanGuess] = useState(false);
+    const [score, setScore] = useState(0);
 
-    const handleMapClick = (event) => {
-        setMarkerPosition({
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng(),
-        });
-    };
+    const maxRound = 3;
+
+    useEffect(() => {
+        if (round === maxRound) {
+            toast.success('Félicitations, vous avez terminé la partie !');
+            setQuestions(false);
+            setRound(0);
+            setScore(0);
+        }
+    }, [round]);
 
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
@@ -64,22 +71,12 @@ const Map = () => {
         return <div>Loading maps</div>;
     }
 
-    const launchQuestions = async () => {
-        const cdata: {"coordinates": {"lng": number, "lat": number}} = {
-            "coordinates" : {
-                "lng": markerPosition?.lng,
-                "lat": markerPosition?.lat
-            },
-        }
-
-        await instance.post(getByCoordinates, cdata, {}).then((response) => {
-            setData(response.data);
-            console.log("data", response.data);
-            setQuestions(true);
-        }).catch((error) => {
-            console.error(error);
-            toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
+    const launchQuestions = (position: {"lng": number, "lat": number}) => {
+        setMarkerPosition({
+            lat: position.lat,
+            lng: position.lng,
         });
+        setCanGuess(true);
     }
 
     const toggleStreetView = () => {
@@ -104,6 +101,67 @@ const Map = () => {
         }
     }
 
+    const handleGuess = async () => {
+        const cdata: {"coordinates": {"lng": number, "lat": number}} = {
+            "coordinates" : {
+                "lng": markerPosition?.lng,
+                "lat": markerPosition?.lat,
+            },
+        }
+
+        await instance.post(getByCoordinates, cdata, {}).then((response) => {
+            setData(response.data);
+            setQuestions(true);
+            setCanGuess(false);
+        }).catch((error) => {
+            console.error(error);
+            toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
+        });
+        // const falseData = {
+        //     Question: {
+        //         type: 'QCM',
+        //         prompts: [
+        //             {
+        //                 prompt: 'Est-ce que la France est un pays ?',
+        //                 valid: true,
+        //                 points: 10,
+        //             },
+        //             {
+        //                 prompt: 'Est-ce que Paris est la capitale de la France ?',
+        //                 valid: true,
+        //                 points: 10,
+        //             },
+        //             {
+        //                 prompt: 'Est-ce que la Tour Eiffel est située à Lyon ?',
+        //                 valid: false,
+        //                 points: 10,
+        //             },
+        //         ],
+        //     },
+        // };
+        // setData(falseData);
+        // setQuestions(true);
+        // setCanGuess(false);
+
+    }
+
+    function generateRandomCoordinates() {
+        const latRange = [41.303, 51.124];
+        const lngRange = [-5.266, 9.662];
+
+        const randomLat = Math.random() * (latRange[1] - latRange[0]) + latRange[0];
+        const randomLng = Math.random() * (lngRange[1] - lngRange[0]) + lngRange[0];
+
+        return {
+            lat: randomLat,
+            lng: randomLng,
+        };
+    }
+
+    const incrementScore = (value: number) => {
+        setScore(score + value);
+    };
+
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <ToastContainer />
@@ -111,7 +169,6 @@ const Map = () => {
                 mapContainerStyle={mapContainerStyle}
                 zoom={7}
                 center={startingPoint}
-                onClick={handleMapClick}
                 onDblClick={toggleStreetView}
                 onLoad={(map) => {
                     // @ts-expect-error mapRef is not null
@@ -155,7 +212,7 @@ const Map = () => {
                 >
                     {!markerPosition ? (
                         <Typography variant="h6" color="white">
-                            Cliquez sur la carte pour placer un marqueur
+                            Generez un marqueur pour commencer
                         </Typography>
                     ) : (
                         <div>
@@ -168,25 +225,69 @@ const Map = () => {
                         </div>
                     )}
                 </Box>
-                <Button variant="contained" color="primary" onClick={launchQuestions} disabled={!markerPosition}>
-                    Lancer le jeu à cette position
+                <Button variant="contained" color="primary" onClick={() => {
+                    launchQuestions(generateRandomCoordinates())
+                }} sx={{marginTop: '20px'}}>
+                    Générer un marqueur
                 </Button>
+                {canGuess && (
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                            handleGuess()
+                        }}
+                        disabled={!markerPosition}
+                        sx={{margin: '20px'}}
+                    >
+                        Lancer le jeu
+                    </Button>
+                )}
                 {isStreetViewActive && (
                     <Button
                         variant="contained"
                         color="primary"
                         onClick={handleExitStreetView}
-                        sx={{ marginTop: '20px' }}
+                        sx={{marginTop: '20px', marginBottom: '20px'}}
                     >
                         Retourner sur la carte
                     </Button>
                 )}
+                <Box
+                    sx={{
+                        border: '1px solid',
+                        borderColor: 'primary.main',
+                        borderRadius: 1,
+                        padding: 1,
+                        marginBottom: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'primary.main',
+                        mb: 2,
+                        marginTop: '20px',
+                    }}
+                >
+                    <div>
+                        <Typography variant="h6" color="white">
+                            Manche: { round } / { maxRound }
+                        </Typography>
+                        <Typography variant="h6" color="white">
+                            Score: { score }
+                        </Typography>
+                    </div>
+                </Box>
             </Box>
             {questions && (
                 <QuestionModal
                     open={questions}
-                    handleClose={() => setQuestions(false)}
+                    handleClose={() => {
+                        setQuestions(false);
+                        setRound(round + 1);
+                    }}
                     data={data}
+                    incrementScore={incrementScore}
                 />
             )}
         </div>

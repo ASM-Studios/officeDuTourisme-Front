@@ -2,13 +2,9 @@ import { Box, Button, FormLabel } from '@mui/material';
 import { QcmPrompt, QcmType} from "../types/Qcm.type.ts";
 import { useState } from "react";
 
-const QcmForm = (data: QcmType | any) => {
-    const [score, setScore] = useState(0);
+const QcmForm = (props: QcmType & { incrementScore: (value: number) => void, handleClose: () => void }) => {
+    const { data, incrementScore, handleClose } = props;
     const [visitedIndex, setVisitedIndex] = useState<number[]>([]);
-
-    const handleReset = () => {
-        window.location.reload();
-    };
 
     const handleClick = (prompt: QcmPrompt, index: number, response: boolean) => {
         if (visitedIndex.includes(index)) {
@@ -16,13 +12,13 @@ const QcmForm = (data: QcmType | any) => {
         }
         setVisitedIndex([...visitedIndex, index])
         if (prompt.valid === response) {
-            setScore(score + prompt.points);
+            incrementScore(prompt.points);
         }
     };
 
     return (
         <Box component="form" sx={{ padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            {data?.data?.Question?.prompts.map((prompt: QcmPrompt, index: number) => (
+            {data?.Question?.prompts.map((prompt: QcmPrompt, index: number) => (
                 <Box key={index} sx={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                     <FormLabel>{prompt.prompt}</FormLabel>
                     <Box sx={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
@@ -45,9 +41,8 @@ const QcmForm = (data: QcmType | any) => {
                 </Box>
             ))}
             <Box sx={{ marginTop: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-                <FormLabel>Résultat: {score}</FormLabel>
-                <Button variant="contained" color="primary" onClick={handleReset}>
-                    Rejouer une partie
+                <Button variant="contained" color="primary" onClick={handleClose}>
+                    Fermer
                 </Button>
             </Box>
         </Box>
