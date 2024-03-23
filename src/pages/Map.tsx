@@ -1,9 +1,11 @@
 import {Box, Button, Typography} from '@mui/material';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import QuestionModal from "../../Components/QuestionModale.tsx";
+import { instance, getByCoordinates } from "../routes.ts";
+import {json} from "react-router-dom";
 
 const mapContainerStyle = {
     width: '100vw',
@@ -44,21 +46,6 @@ const Map = () => {
 
     const mapRef = useRef();
 
-    useEffect(() => {
-        if (mapRef.current) {
-            // @ts-expect-error mapRef is not null
-            const streetView = mapRef.current.getStreetView();
-            streetView.setOptions({
-                linksControl: false,
-                panControl: false,
-            });
-
-            streetView.addListener('visibility_changed', () => {
-                setIsStreetViewActive(streetView.getVisible());
-            });
-        }
-    }, [mapRef]);
-
     const handleExitStreetView = () => {
         if (mapRef.current) {
             // @ts-expect-error mapRef is not null
@@ -75,37 +62,23 @@ const Map = () => {
         return <div>Loading maps</div>;
     }
 
-    const launchQuestions = () => {
-        const coordonate = {
-            lat: markerPosition?.lat,
-            lng: markerPosition?.lng,
-        }
-        //TODO: Call API
-        const questionData: any = { // Will be changed
-            Coordinate: coordonate,
-            Question: {
-                type: "QCM",
-                prompts: [
-                    {
-                        prompt: "Avez-vous vu un monument historique ?",
-                        valid: true,
-                        points: 2,
-                    },
-                    {
-                        prompt: "Avez-vous vu un musée ?",
-                        valid: false,
-                        points: 1,
-                    },
-                    {
-                        prompt: "Avez-vous vu un château ?",
-                        valid: false,
-                        points: 1,
-                    },
-                ],
+    const launchQuestions = async () => {
+        const cdata: {"coordinates": {"lng": number, "lat": number}} = {
+            "coordinates" : {
+                "lng": markerPosition?.lng,
+                "lat": markerPosition?.lat
             },
         }
-        setData(questionData);
-        setQuestions(true);
+
+        await instance.get(getByCoordinates, {
+            data: cdata
+        }).then((response) => {
+            setData(response.data);
+            setQuestions(true);
+        }).catch((error) => {
+            console.error(error);
+            toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
+        });
     }
 
     return (
