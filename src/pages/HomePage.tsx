@@ -3,13 +3,13 @@ import officeDuTourisme from '@assets/OfficeDuTourisme.png';
 
 const Actions = () => {
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <CardContent>
                 <Typography variant="h5" component="div">
                     Bienvenue dans l'Office du Tourisme
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Le site officiel pour explorer la France !
+                    LE site officiel pour explorer la France !
                     Prêt à découvrir les merveilles de notre pays ?
                 </Typography>
                 <Button variant="contained" color="primary" onClick={

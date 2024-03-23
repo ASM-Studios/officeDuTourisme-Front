@@ -31,11 +31,24 @@ You will also need to run the [back-end](https://github.com/ASM-Studios/officeDu
 
 - [Vite](https://vitejs.dev/)
 - [React](https://reactjs.org/)
+- [Material-UI](https://material-ui.com/)
+- [Google Map API](https://developers.google.com/maps/documentation/javascript/overview)
 
 ## Contributors
 
--
+- [Adrien AUDIARD](mailto:adrien.audiard@epitech.eu)
+- [Mathieu BOREL](mailto:mathieu.borel@epitech.eu)
+- [Yohann MANGENOT](mailto:yohann.mangenot@epitech.eu)
+- [Charles MADJERI](mailto:charles.madjeri@epitech.eu)
+- [Basile FOUQUET](mailto:basile.fouquet@epitech.eu)
+- [Maël RABOT](mailto:mael.rabot@epitech.eu)
+
+
+
+
+
+
 
 ## Have fun !
 
-![img.png](JarJar.png)
+![img.png](src/assets/JarJar.png)
