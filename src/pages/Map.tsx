@@ -18,7 +18,11 @@ const startingPoint = {
     lng: 2.2137,
 };
 
-const Map = () => {
+interface MapProps {
+    rounded: boolean;
+}
+
+const Map: React.FC<MapProps> = ({ rounded }) => {
     const [questions, setQuestions] = useState(false);
     const [data, setData] = useState({
         Coordinate: {
@@ -117,37 +121,11 @@ const Map = () => {
             console.error(error);
             toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
         });
-        // const falseData = {
-        //     Question: {
-        //         type: 'QCM',
-        //         prompts: [
-        //             {
-        //                 prompt: 'Est-ce que la France est un pays ?',
-        //                 valid: true,
-        //                 points: 10,
-        //             },
-        //             {
-        //                 prompt: 'Est-ce que Paris est la capitale de la France ?',
-        //                 valid: true,
-        //                 points: 10,
-        //             },
-        //             {
-        //                 prompt: 'Est-ce que la Tour Eiffel est située à Lyon ?',
-        //                 valid: false,
-        //                 points: 10,
-        //             },
-        //         ],
-        //     },
-        // };
-        // setData(falseData);
-        // setQuestions(true);
-        // setCanGuess(false);
-
     }
 
     function generateRandomCoordinates() {
-        const latRange = [41.303, 51.124];
-        const lngRange = [-5.266, 9.662];
+        const latRange = [42, 50];
+        const lngRange = [-4, 8];
 
         const randomLat = Math.random() * (latRange[1] - latRange[0]) + latRange[0];
         const randomLng = Math.random() * (lngRange[1] - lngRange[0]) + lngRange[0];
@@ -162,6 +140,14 @@ const Map = () => {
         setScore(score + value);
     };
 
+    const handleClick = (event) => {
+        if (rounded) return;
+        setMarkerPosition({
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng(),
+        });
+    }
+
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <ToastContainer />
@@ -169,6 +155,7 @@ const Map = () => {
                 mapContainerStyle={mapContainerStyle}
                 zoom={7}
                 center={startingPoint}
+                onClick={handleClick}
                 onDblClick={toggleStreetView}
                 onLoad={(map) => {
                     // @ts-expect-error mapRef is not null
@@ -225,12 +212,14 @@ const Map = () => {
                         </div>
                     )}
                 </Box>
-                <Button variant="contained" color="primary" onClick={() => {
+                {rounded && (
+                    <Button variant="contained" color="primary" onClick={() => {
                     launchQuestions(generateRandomCoordinates())
                 }} sx={{marginTop: '20px'}}>
                     Générer un marqueur
                 </Button>
-                {canGuess && (
+                )}
+                {(canGuess || !rounded) && (
                     <Button
                         variant="contained"
                         color="primary"
@@ -253,31 +242,33 @@ const Map = () => {
                         Retourner sur la carte
                     </Button>
                 )}
-                <Box
-                    sx={{
-                        border: '1px solid',
-                        borderColor: 'primary.main',
-                        borderRadius: 1,
-                        padding: 1,
-                        marginBottom: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'primary.main',
-                        mb: 2,
-                        marginTop: '20px',
-                    }}
-                >
-                    <div>
-                        <Typography variant="h6" color="white">
-                            Manche: { round } / { maxRound }
-                        </Typography>
-                        <Typography variant="h6" color="white">
-                            Score: { score }
-                        </Typography>
-                    </div>
-                </Box>
+                {rounded && (
+                    <Box
+                        sx={{
+                            border: '1px solid',
+                            borderColor: 'primary.main',
+                            borderRadius: 1,
+                            padding: 1,
+                            marginBottom: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'primary.main',
+                            mb: 2,
+                            marginTop: '20px',
+                        }}
+                    >
+                        <div>
+                            <Typography variant="h6" color="white">
+                                Manche: { round } / { maxRound }
+                            </Typography>
+                            <Typography variant="h6" color="white">
+                                Score: { score }
+                            </Typography>
+                        </div>
+                    </Box>
+                )}
             </Box>
             {questions && (
                 <QuestionModal

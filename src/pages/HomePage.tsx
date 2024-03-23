@@ -18,25 +18,22 @@ const ping = async () => {
     }
 };
 
-const launchGame = async () => {
+const launchGame = async (rounded: boolean) => {
     await ping().then(() => {
-        window.location.href = '/map';
+        if (rounded) { window.location.href = '/round';}
+        else { window.location.href = '/map'; }
     }).catch(() => {
         toast.error("L'API n'est pas disponible, veuillez réessayer plus tard.");
     });
-}
-
-const responseGoogle = (response) => {
-    console.log(response);
 }
 
 const Actions = () => {
     const [username, setUsername] = React.useState('');
     const [cookies, setCookie] = useCookies(['username']);
 
-    const handleButtonClick = () => {
+    const handleButtonClick = (rounded: boolean) => {
         setCookie('username', username, { path: '/' });
-        launchGame();
+        launchGame(rounded);
     };
 
     return (
@@ -59,8 +56,11 @@ const Actions = () => {
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </Box>
-                <Button variant="contained" color="primary" onClick={handleButtonClick}>
+                <Button variant="contained" color="primary" onClick={() => {handleButtonClick(false)}} disabled={username === ""}>
                     Explorer ma france
+                </Button>
+                <Button variant="contained" color="primary" onClick={() => {handleButtonClick(true)}} disabled={username === ""} sx={{marginLeft: '20px'}}>
+                    Lancer une partie classée
                 </Button>
             </CardContent>
         </Box>

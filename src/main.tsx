@@ -15,7 +15,8 @@ export default function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
-                    <Route path="/map" element={<Map />} />
+                    <Route path="/map" element={<Map rounded={false} />} />
+                    <Route path="/round" element={<Map rounded={true} />} />
                     <Route path="*" element={<NoPage />} />
                 </Routes>
             </BrowserRouter>
