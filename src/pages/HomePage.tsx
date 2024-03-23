@@ -43,13 +43,6 @@ const Actions = () => {
                 <Button variant="contained" color="primary" onClick={launchGame}>
                     Explorer ma france
                 </Button>
-                <GoogleLogin
-                    clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
-                    buttonText="Login with Google"
-                    onSuccess={responseGoogle}
-                    onFailure={responseGoogle}
-                    cookiePolicy={'single_host_origin'}
-                />
             </CardContent>
         </Box>
     );
