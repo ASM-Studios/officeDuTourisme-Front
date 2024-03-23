@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import QuestionModal from "../../Components/QuestionModale.tsx";
 import { instance, getByCoordinates } from "../routes.ts";
 import {json} from "react-router-dom";
+import {Streetview} from "@mui/icons-material";
 
 const mapContainerStyle = {
     width: '100vw',
@@ -51,6 +52,7 @@ const Map = () => {
             // @ts-expect-error mapRef is not null
             const streetView = mapRef.current.getStreetView();
             streetView.setVisible(false);
+            setIsStreetViewActive(false);
         }
     };
 
@@ -70,15 +72,36 @@ const Map = () => {
             },
         }
 
-        await instance.get(getByCoordinates, {
-            data: cdata
-        }).then((response) => {
+        await instance.post(getByCoordinates, cdata, {}).then((response) => {
             setData(response.data);
+            console.log("data", response.data);
             setQuestions(true);
         }).catch((error) => {
             console.error(error);
             toast.error("Une erreur est survenue, veuillez réessayer plus tard.");
         });
+    }
+
+    const toggleStreetView = () => {
+        if (mapRef?.current) {
+            if (mapRef?.current?.getZoom() <= 13) {
+                toast.error('Veuillez zoomer pour activer Street View.');
+                return;
+            }
+            // @ts-expect-error mapRef is not null
+            const streetView = mapRef.current.getStreetView();
+            const streetViewService = new google.maps.StreetViewService();
+
+            streetViewService.getPanoramaByLocation(markerPosition, 50, (streetViewPanoramaData, status) => {
+                if (status === google.maps.StreetViewStatus.OK) {
+                    streetView.setPosition(markerPosition);
+                    streetView.setVisible(true);
+                    setIsStreetViewActive(true);
+                } else {
+                    toast.error('Street View non disponible à cet endroit.')
+                }
+            });
+        }
     }
 
     return (
@@ -89,12 +112,13 @@ const Map = () => {
                 zoom={7}
                 center={startingPoint}
                 onClick={handleMapClick}
+                onDblClick={toggleStreetView}
                 onLoad={(map) => {
                     // @ts-expect-error mapRef is not null
                     mapRef.current = map;
                 }}
                 options={{
-                    disableDefaultUI: false,
+                    disableDefaultUI: true,
                 }}
             >
                 {markerPosition && <Marker position={markerPosition} />}
@@ -148,8 +172,13 @@ const Map = () => {
                     Lancer le jeu à cette position
                 </Button>
                 {isStreetViewActive && (
-                    <Button variant="contained" color="primary" onClick={handleExitStreetView}>
-                        Exit Street View
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleExitStreetView}
+                        sx={{ marginTop: '20px' }}
+                    >
+                        Retourner sur la carte
                     </Button>
                 )}
             </Box>

@@ -2,6 +2,7 @@ import { Box, Card, Button, CardContent, Typography, Grid } from '@mui/material'
 import officeDuTourisme from '@assets/OfficeDuTourisme.png';
 import { endpoint, instance } from "../routes.ts";
 import { toast, ToastContainer } from "react-toastify";
+import { GoogleLogin } from 'react-google-login';
 
 const ping = async () => {
     try {
@@ -24,6 +25,10 @@ const launchGame = async () => {
     });
 }
 
+const responseGoogle = (response) => {
+    console.log(response);
+}
+
 const Actions = () => {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -38,6 +43,13 @@ const Actions = () => {
                 <Button variant="contained" color="primary" onClick={launchGame}>
                     Explorer ma france
                 </Button>
+                <GoogleLogin
+                    clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+                    buttonText="Login with Google"
+                    onSuccess={responseGoogle}
+                    onFailure={responseGoogle}
+                    cookiePolicy={'single_host_origin'}
+                />
             </CardContent>
         </Box>
     );
