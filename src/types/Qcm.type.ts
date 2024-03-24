@@ -1,8 +1,3 @@
-type QcmCoordoninate = {
-    lat: number;
-    lng: number;
-};
-
 export type QcmPrompt = {
     prompt: string;
     valid: boolean;

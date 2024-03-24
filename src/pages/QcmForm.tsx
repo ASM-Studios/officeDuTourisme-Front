@@ -1,7 +1,7 @@
 import { Box, Button, FormLabel } from '@mui/material';
 import { QcmPrompt, QcmType} from "../types/Qcm.type.ts";
 import { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const QcmForm = (props: QcmType & { incrementScore: (value: number) => void, handleClose: () => void }) => {
     const { data, incrementScore, handleClose } = props;
