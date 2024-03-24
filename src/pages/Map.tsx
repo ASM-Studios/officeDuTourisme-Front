@@ -5,8 +5,6 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import QuestionModal from "../../Components/QuestionModale.tsx";
 import { instance, getByCoordinates } from "../routes.ts";
-import {Simulate} from "react-dom/test-utils";
-import pointerCancel = Simulate.pointerCancel;
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -23,8 +21,8 @@ const mapContainerStyle = {
 };
 
 const startingPoint = {
-    lat: 46.2276,
-    lng: 2.2137,
+    lat: 46.5118,
+    lng: 1.1754,
 };
 
 interface MapProps {
@@ -71,6 +69,13 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
         }
     }, [round]);
 
+    useEffect(() => {
+        if (isStreetViewActive) {
+            handleExitStreetView();
+            toggleStreetView();
+        }
+    }, [markerPosition]);
+
     const getFirsts = async () => {
         instance.get('/getFirsts').then((response) => {
             setRows(response.data);
@@ -104,32 +109,44 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
     }
 
     const launchQuestions = (position: {"lng": number, "lat": number}) => {
-        setMarkerPosition({
+        const newPosition = {
             lat: position.lat,
             lng: position.lng,
-        });
+        };
+        setMarkerPosition(newPosition);
+
+        if (mapRef.current) {
+            mapRef.current.setCenter(newPosition);
+        }
+
         setCanGuess(true);
     }
 
     const toggleStreetView = () => {
         if (mapRef?.current) {
-            if (mapRef?.current?.getZoom() <= 13) {
-                toast.error('Veuillez zoomer pour activer Street View.');
-                return;
-            }
-            // @ts-expect-error mapRef is not null
-            const streetView = mapRef.current.getStreetView();
-            const streetViewService = new google.maps.StreetViewService();
+            let zoomLevel = mapRef.current.getZoom();
+            const zoomInterval = setInterval(() => {
+                if (zoomLevel >= 20) {
+                    clearInterval(zoomInterval);
+                    // @ts-expect-error mapRef is not null
+                    const streetView = mapRef.current.getStreetView();
+                    const streetViewService = new google.maps.StreetViewService();
 
-            streetViewService.getPanoramaByLocation(markerPosition, 50, (streetViewPanoramaData, status) => {
-                if (status === google.maps.StreetViewStatus.OK) {
-                    streetView.setPosition(markerPosition);
-                    streetView.setVisible(true);
-                    setIsStreetViewActive(true);
+                    streetViewService.getPanoramaByLocation(markerPosition, 50, (streetViewPanoramaData, status) => {
+                        if (status === google.maps.StreetViewStatus.OK) {
+                            streetView.setPosition(markerPosition);
+                            streetView.setVisible(true);
+                            setIsStreetViewActive(true);
+                        } else {
+                            toast.error('Street View non disponible à cet endroit.')
+                        }
+                    });
                 } else {
-                    toast.error('Street View non disponible à cet endroit.')
+                    zoomLevel++;
+                    mapRef.current.setZoom(zoomLevel);
+                    mapRef.current.setCenter(markerPosition);
                 }
-            });
+            }, 300);
         }
     }
 
@@ -155,17 +172,63 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
         });
     }
 
-    function generateRandomCoordinates() {
+    async function generateRandomPosition(latRange, lngRange) {
+       const randomLat = Math.random() * (latRange[1] - latRange[0]) + latRange[0];
+       const randomLng = Math.random() * (lngRange[1] - lngRange[0]) + lngRange[0];
+       return {
+           lat: randomLat,
+           lng: randomLng,
+       };
+    }
+
+    async function getStreetAddress(geocoder, position) {
+        return new Promise((resolve) => {
+            geocoder.geocode({ location: position }, (results, status) => {
+                if (status === "OK" && results) {
+                    const streetAddressResult = results.find(result => result.types.includes('street_address'));
+                    resolve(streetAddressResult);
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    function isInFrance(streetAddressResult) {
+        const countryComponent = streetAddressResult.address_components.find(component => component.types.includes('country'));
+        return countryComponent && countryComponent.long_name === 'France';
+    }
+
+    function isStreetViewAvailable(streetViewService, position) {
+        return new Promise((resolve) => {
+            streetViewService.getPanoramaByLocation(position, 50, (data, status) => {
+                resolve(status === "OK");
+            });
+        });
+    }
+
+    async function generateRandomCoordinates() {
         const latRange = [42, 50];
         const lngRange = [-4, 8];
+        const geocoder = new google.maps.Geocoder();
+        const streetViewService = new google.maps.StreetViewService();
+        let resolvedData = null;
 
-        const randomLat = Math.random() * (latRange[1] - latRange[0]) + latRange[0];
-        const randomLng = Math.random() * (lngRange[1] - lngRange[0]) + lngRange[0];
+        while (!resolvedData) {
+            const rand_pos = await generateRandomPosition(latRange, lngRange);
+            const streetAddressResult = await getStreetAddress(geocoder, rand_pos);
 
-        return {
-            lat: randomLat,
-            lng: randomLng,
-        };
+            if (streetAddressResult && isInFrance(streetAddressResult)) {
+                const tempResolvedData = {
+                    address: streetAddressResult.formatted_address,
+                    position: streetAddressResult.geometry.location.toJSON()
+                };
+                if (await isStreetViewAvailable(streetViewService, tempResolvedData.position)) {
+                    resolvedData = tempResolvedData;
+                }
+            }
+        }
+        return resolvedData.position;
     }
 
     const incrementScore = (value: number) => {
@@ -269,8 +332,14 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
                 </Box>
                 {rounded && (
                     <Button variant="contained" color="primary" onClick={() => {
-                    launchQuestions(generateRandomCoordinates())
-                }} sx={{marginTop: '20px'}}>
+                        generateRandomCoordinates()
+                            .then(position => {
+                                launchQuestions(position);
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
+                    }} sx={{marginTop: '20px'}}>
                     Générer un marqueur
                 </Button>
                 )}
@@ -295,6 +364,17 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
                         sx={{marginTop: '20px', marginBottom: '20px'}}
                     >
                         Retourner sur la carte
+                    </Button>
+                )}
+                {!isStreetViewActive && (
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={toggleStreetView}
+                        disabled={!markerPosition}
+                        sx={{marginTop: '20px', marginBottom: '20px'}}
+                    >
+                        Passer en StreetView
                     </Button>
                 )}
                 {rounded && (
