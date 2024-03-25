@@ -404,14 +404,19 @@ const Map: React.FC<MapProps> = ({ rounded }) => {
                         </div>
                     </Box>
                 )}
-                {rounded && (
-		    <Button variant="contained" color="primary" onClick={() => {
+                {rounded &&
+                    (<Button variant="contained" color="primary" onClick={() => {
                         getFirsts();
                         setShowScoreboard(true);
                     }} sx={{marginTop: '20px'}}>
                         Voir les meilleurs scores
                     </Button>
-		)}
+                    )}
+                <Button variant="contained" color="primary" onClick={() => {
+                    window.location.href = '/';
+                }} sx={{marginTop: '20px'}}>
+                    Revenir à l'accueil
+                </Button>
             </Box>
             {rounded && (
                 <Modal
